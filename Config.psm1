@@ -105,6 +105,8 @@ function Get-AvailableConfigOptions {
           "Description" = "RAM (in bytes) assigned to the VM used to generate the image."},
         @{"Name" = "disk_size"; "GroupName" = "vm"; "DefaultValue" = "42949672960";
           "Description" = "Disk space (in bytes) assigned to the boot disk for the VM used to generate the image."},
+	@{"Name" = "vlan"; "GroupName" = "vm"; "DefaultValue" = "";
+          "Description" = "Vlan-ID assigned to the NIC for the VM used to generate the image."},
         @{"Name" = "shrink_image_to_minimum_size"; "DefaultValue" = $true; "AsBoolean" = $true
           "Description" = "Whether to shrink the image partition and disk after the image generation is complete."},
         @{"Name" = "virtio_iso_path"; "GroupName" = "drivers";
