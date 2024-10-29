@@ -35,9 +35,9 @@ Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-
 Don't forget to reboot after you install the Hyper-V role.
 "@
 
-$VirtIODrivers = @("balloon", "netkvm", "pvpanic", "qemupciserial", "qxl",
-             "qxldod", "vioinput", "viorng", "vioscsi", "vioserial", "viostor")
-
+#Added: "qemufwcfg", "smbus", "sriov", "viofs", "viogpudo", "viomem"
+$VirtIODrivers = @("balloon", "netkvm", "pvpanic", "qemufwcfg", "qemupciserial", "qxl",
+             "qxldod", "smbus", "sriov", "viofs", "viogpudo", "vioinput", "viomem", "viorng", "vioscsi", "vioserial", "viostor")
 
 $MAX_BUILD_NUMBER = [System.Double]::PositiveInfinity
 $VirtIODriverMappings = @{
@@ -50,8 +50,10 @@ $VirtIODriverMappings = @{
     "2k12r2" = @(9600, 9900, $true);
     "w8.1" = @(9600, 9900, $false);
     "2k16" = @(14393, 16299, $true);
-    "w10" = @(10240, $MAX_BUILD_NUMBER, $false);
-    "2k19" = @(17763, $MAX_BUILD_NUMBER, $true);
+    "w10" = @(10240, 21999, $false);
+	  "w11" = @(22000, $MAX_BUILD_NUMBER, $false);
+    "2k19" = @(17763, 20347, $true);
+	  "2k22" = @(20348, $MAX_BUILD_NUMBER, $true);
 }
 
 $AvailableCompressionFormats = @("tar","gz","zip")
@@ -1226,7 +1228,8 @@ function Run-Sysprep {
         [string]$VMSwitch,
         [ValidateSet("1", "2")]
         [string]$Generation = "1",
-        [switch]$DisableSecureBoot
+        [switch]$DisableSecureBoot,
+		    [string]$VlanID=""
     )
 
     Write-Log "Creating VM $Name attached to $VMSwitch"
@@ -1247,6 +1250,11 @@ function Run-Sysprep {
     if ($DisableSecureBoot -and $Generation -eq "2") {
          Set-VMFirmware -VMName $Name -EnableSecureBoot Off
     }
+    if ($VlanID -ne "") {
+		   Connect-VMNetworkAdapter -VMName $Name -SwitchName $VMSwitch
+		   Write-Host "Set VlanID: $($VlanID)"
+		   Set-VMNetworkAdapterVlan -VMName $Name -VlanID $VlanID -Access
+	  }
     Write-Log "Starting $Name"
     Start-VM $Name | Out-Null
     Start-Sleep 5
@@ -1558,7 +1566,7 @@ function New-WindowsOnlineImage {
             $Name = "WindowsOnlineImage-Sysprep" + (Get-Random)
             Run-Sysprep -Name $Name -Memory $windowsImageConfig.ram_size -vhdPath $virtualDiskPath `
                 -VMSwitch $switch.Name -CpuCores $windowsImageConfig.cpu_count `
-                -Generation $generation -DisableSecureBoot:$windowsImageConfig.disable_secure_boot
+                -Generation $generation -DisableSecureBoot:$windowsImageConfig.disable_secure_boot -VlanID $windowsImageConfig.vlan
         }
 
         if ($windowsImageConfig.shrink_image_to_minimum_size -eq $true) {
@@ -1905,7 +1913,7 @@ function New-WindowsFromGoldenImage {
             $Name = "WindowsGoldImage-Sysprep" + (Get-Random)
             Run-Sysprep -Name $Name -Memory $windowsImageConfig.ram_size -vhdPath $windowsImageConfig.gold_image_path `
                 -VMSwitch $switch.Name -CpuCores $windowsImageConfig.cpu_count `
-                -Generation $generation -DisableSecureBoot:$windowsImageConfig.disable_secure_boot
+                -Generation $generation -DisableSecureBoot:$windowsImageConfig.disable_secure_boot -VlanID $windowsImageConfig.vlan
         }
 
         if ($windowsImageConfig.shrink_image_to_minimum_size -eq $true) {
